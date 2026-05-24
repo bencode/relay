@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-relay.py — GitHub Issue 协作 CLI (Relay v0.2)
+relay.py — GitHub Issue collaboration CLI (Relay v0.2)
 
-只承担多步逻辑：lint / verify / close。
-单步动作（assign / 加标签 / 评论）走 gh CLI 直接调用。
+Handles only multi-step logic: lint / verify / close.
+Single-step actions (assign / label / comment) go through the gh CLI directly.
 
-约束：Python 3.9+ stdlib only，跨平台 macOS/Linux。
-GitHub 操作全部通过 subprocess 调 `gh`。
+Constraints: Python 3.9+ stdlib only, cross-platform macOS/Linux.
+All GitHub operations go through `gh` via subprocess.
 """
 
 from __future__ import annotations
@@ -167,7 +167,7 @@ def cmd_close(num: str) -> int:
     author = fetch_author(num)
     assignees = fetch_assignees(num)
     cc_creator = author and author not in assignees
-    ping_line = f"\n\ncc @{author} 请验收" if cc_creator else ""
+    ping_line = f"\n\ncc @{author} please verify" if cc_creator else ""
 
     comment_body = (
         f"✓ Verification passed\n\n"

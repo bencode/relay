@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Relay setup-check — 一键自检脚本（项目无关）
-# 检查 gh / python / relay.py / 读 issue 能力是否齐备
+# Relay setup-check — one-shot self-test (project-agnostic)
+# Verifies gh / python / relay.py / issue-read access are all available.
 # Usage: bash <skill-dir>/setup-check.sh
-# Exit 0 = 全通过；非 0 = 有项目缺失
+# Exit 0 = all passed; non-zero = something is missing
 #
-# 自动从当前 git remote 识别 repo + owner，无需配置。
-# 在任何 GitHub-based 项目内跑都可（个人仓库 / org 仓库都支持）。
+# Auto-detects repo + owner from the current git remote, no config needed.
+# Works inside any GitHub-based project (personal repos and org repos alike).
 
 set -u
 
@@ -41,17 +41,17 @@ check "inside a GitHub repo" \
   "cd into a project that has a GitHub remote (git remote -v should show github.com)" \
   bash -c "gh repo view --json nameWithOwner -q .nameWithOwner"
 
-# Capture repo + authed user for downstream checks
+# Capture repo + authenticated user for downstream checks
 REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || echo "")
 ME=$(gh api user --jq .login 2>/dev/null || echo "")
 
 if [ -n "$REPO" ]; then
   OWNER="${REPO%%/*}"
-  # Org-membership check only makes sense when the owner is an org (not yourself).
+  # The org-membership check only makes sense when the owner is an org (not yourself).
   # Personal repos (owner == you) skip it — repo access is covered by "can list issues".
   if [ -n "$OWNER" ] && [ "$OWNER" != "$ME" ]; then
     check "member of org '${OWNER}'" \
-      "ask org owner to invite you at https://github.com/orgs/${OWNER}/people" \
+      "ask the org owner to invite you at https://github.com/orgs/${OWNER}/people" \
       bash -c "gh api user/memberships/orgs/${OWNER} 2>&1 | grep -q '\"state\": *\"active\"'"
   fi
 fi
@@ -65,7 +65,7 @@ check "relay.py runnable" \
   python3 "$SCRIPT_DIR/relay.py" --help
 
 check "can list issues in current repo" \
-  "check repo permissions; or 'gh repo set-default' if multiple remotes" \
+  "check repo permissions; or run 'gh repo set-default' if there are multiple remotes" \
   gh issue list --limit 1 --json number
 
 printf "\n  ─────────────────\n"
