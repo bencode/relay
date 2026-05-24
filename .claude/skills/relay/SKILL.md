@@ -382,21 +382,19 @@ gh issue list --state closed --search "closed:>$(date -v-7d +%Y-%m-%d)" \
 - 用户问"查数据库" → 走项目的数据查询 skill
 - 跟 PR review 强相关 → 在 PR comment 上做，不开 issue
 
-## 新项目首次安装
+## 装到新项目
 
-最快路径（在目标项目根目录跑）：
+推荐透明四步（agent 自己装时走这条，别用 `curl | bash`——会被权限/自动模式拦）。在目标项目根目录：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/bencode/relay/main/install.sh | bash
+git clone --depth 1 https://github.com/bencode/relay /tmp/relay
+mkdir -p .claude/skills && cp -r /tmp/relay/.claude/skills/relay .claude/skills/ && rm -rf /tmp/relay
+bash .claude/skills/relay/init-labels.sh      # 建 7 个 label（幂等）
+bash .claude/skills/relay/setup-check.sh       # 自检
 ```
 
-它会：拷 `.claude/skills/relay/` 进当前项目 → 建好 7 个 label → 跑自检。
+装好后：把 `.claude/skills/relay/` 提交进 git；在项目 `AGENTS.md` / `CLAUDE.md` 加一行指向本 skill。
 
-手动安装：
-
-1. 复制本 skill 目录到目标项目的 `.claude/skills/relay/`
-2. 建 label：`bash "${CLAUDE_SKILL_DIR}/init-labels.sh"`（幂等，一次性）
-3. 跑自检：`bash "${CLAUDE_SKILL_DIR}/setup-check.sh"`
-4. 在项目 `AGENTS.md` / `CLAUDE.md` 加一行指向本 skill
+人手图省事可 `curl -fsSL https://raw.githubusercontent.com/bencode/relay/main/install.sh | bash`（等价四步）。
 
 **项目特定约定**（如团队成员、特定流程偏好）可写在项目自己的 AGENTS.md 里，不污染本 skill。
