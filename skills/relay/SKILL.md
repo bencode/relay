@@ -65,6 +65,7 @@ pnpm test src/lib/validate.test.ts --silent
 ```
 
 **Constraints:**
+- The ```bash block must come **immediately after** the `## Verification` heading — only blank lines between, no prose. This strict position is deliberate: it's what makes verification deterministic and traceable. `relay.py lint` rejects a block that has text before it and tells you to move it up.
 - Only one bash block is allowed (relay.py extracts the first one).
 - Don't write manual steps like `# manual: visually confirm ...` — v0.2 only accepts executable commands, forcing "done" to be formalized.
 - Commands should be genuinely repeatable (dry-run mindset).
@@ -120,6 +121,8 @@ An issue is a project-level collaboration object; don't switch git branches beca
 > gh label create "state:verified" --color "0e8a16"
 > ```
 > Or just run `bash "${CLAUDE_SKILL_DIR}/init-labels.sh"` (one script covers actor labels too).
+
+> **Label names + colors are the contract** relay relies on — it matches labels by name. **Descriptions are cosmetic and project-local**: localize them however you like (e.g. Chinese). `init-labels.sh` is create-only and never overwrites an existing label, so your descriptions survive reinstalls.
 
 ### State semantics matrix
 

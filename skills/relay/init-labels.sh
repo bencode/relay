@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
-# Relay init-labels — create the 7 labels relay uses, once, on the current repo (idempotent)
+# Relay init-labels — create the 7 labels relay uses, on the current repo.
 # Usage: bash <skill-dir>/init-labels.sh
-# Targets the GitHub repo of the current git remote. --force updates existing labels instead of erroring.
+# Targets the GitHub repo of the current git remote.
+#
+# Create-only: relay depends on the label NAMES (plus colors for consistency).
+# Descriptions are cosmetic and project-local, so this script never overwrites an
+# existing label — re-running it leaves labels you already have (e.g. ones with
+# localized/translated descriptions) completely untouched.
 
 set -u
 
@@ -11,13 +16,20 @@ if [ -z "$REPO" ]; then
   exit 1
 fi
 
+# Fetch existing label names once so we can skip (never overwrite) them.
+EXISTING=$(gh label list --limit 200 --json name --jq '.[].name' 2>/dev/null || echo "")
+
 printf "\n  Creating relay labels on %s\n  ─────────────────\n" "$REPO"
 
-# name  color  description
+# name  color  description (description is only a first-time seed; never re-applied)
 create() {
   local name="$1" color="$2" desc="$3"
-  if gh label create "$name" --color "$color" --description "$desc" --force >/dev/null 2>&1; then
-    printf "  \033[32m✓\033[0m  %s\n" "$name"
+  if printf '%s\n' "$EXISTING" | grep -qxF "$name"; then
+    printf "  \033[33m=\033[0m  %s (exists, left as-is)\n" "$name"
+    return
+  fi
+  if gh label create "$name" --color "$color" --description "$desc" >/dev/null 2>&1; then
+    printf "  \033[32m✓\033[0m  %s (created)\n" "$name"
   else
     printf "  \033[31m✗\033[0m  %s (creation failed, check permissions)\n" "$name"
   fi

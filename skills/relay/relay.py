@@ -20,11 +20,20 @@ import tempfile
 from dataclasses import dataclass
 
 REQUIRED_SECTIONS = ("Goal", "Verification", "Refs")
+# Strict by design: the bash block must immediately follow the heading (only blank
+# lines between). This rigidity keeps verification deterministic and traceable.
 VERIFICATION_BLOCK_PATTERN = re.compile(
     r"^## Verification\s*\n+```bash\n(.*?)\n```",
     re.MULTILINE | re.DOTALL,
 )
 SECTION_PATTERN = re.compile(r"^## (\w+)", re.MULTILINE)
+# Diagnostics only (never used to accept): detect a bash block that sits *somewhere*
+# in the Verification section but not in the required position, so lint can say why.
+_VERIFICATION_SECTION_PATTERN = re.compile(
+    r"^## Verification[ \t]*\n(.*?)(?=^## |\Z)",
+    re.MULTILINE | re.DOTALL,
+)
+_ANY_BASH_BLOCK_PATTERN = re.compile(r"^```bash\n", re.MULTILINE)
 
 
 def run_gh(args: list[str], check: bool = True) -> subprocess.CompletedProcess:
@@ -56,6 +65,7 @@ class LintResult:
     ok: bool
     missing_sections: list[str]
     has_verification_block: bool
+    block_misplaced: bool = False
 
     def render(self) -> str:
         if self.ok:
@@ -64,7 +74,13 @@ class LintResult:
         if self.missing_sections:
             lines.append(f"  missing sections: {', '.join('## ' + s for s in self.missing_sections)}")
         if not self.has_verification_block and "Verification" not in self.missing_sections:
-            lines.append("  ## Verification exists but no ```bash block found")
+            if self.block_misplaced:
+                lines.append(
+                    "  ## Verification has a ```bash block, but text precedes it — "
+                    "the block must come first (only blank lines between the heading and ```bash)"
+                )
+            else:
+                lines.append("  ## Verification has no ```bash block")
         return "\n".join(lines)
 
 
@@ -72,8 +88,18 @@ def lint_body(body: str) -> LintResult:
     found = set(SECTION_PATTERN.findall(body))
     missing = [s for s in REQUIRED_SECTIONS if s not in found]
     has_block = bool(VERIFICATION_BLOCK_PATTERN.search(body))
+    block_misplaced = False
+    if not has_block and "Verification" not in missing:
+        section = _VERIFICATION_SECTION_PATTERN.search(body)
+        if section and _ANY_BASH_BLOCK_PATTERN.search(section.group(1)):
+            block_misplaced = True
     ok = not missing and has_block
-    return LintResult(ok=ok, missing_sections=missing, has_verification_block=has_block)
+    return LintResult(
+        ok=ok,
+        missing_sections=missing,
+        has_verification_block=has_block,
+        block_misplaced=block_misplaced,
+    )
 
 
 def extract_verification_block(body: str) -> str | None:

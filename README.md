@@ -41,6 +41,7 @@ Once installed, Claude Code follows the conventions in `.claude/skills/relay/SKI
 - **Lifecycle**: `state:in-progress` → `state:needs-verification` (switched automatically by `relay.py close`) → `state:verified` (creator accepts in person).
 - **Closing goes through `relay.py close <num>`**: it lints the structure, runs Verification, and only then closes, switches labels, and cc's the creator.
 - Single-step actions (list / view / create / edit / comment / reopen) use `gh` directly.
+- **Labels**: relay matches labels by name, so names + colors are the contract; their descriptions are cosmetic — localize them (e.g. Chinese) freely. `init-labels.sh` is create-only and won't overwrite labels you already have.
 
 Full conventions, the state machine, and end-to-end examples are in [`skills/relay/SKILL.md`](skills/relay/SKILL.md).
 
